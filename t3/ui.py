@@ -1,16 +1,11 @@
 import gradio as gr
-from pathlib import Path
 
 def upload_file(file):
-    filename = Path(file).name
     if file is not None:
-        with open(file) as f:
+        with open(file.name) as f:
             text = f.read()
             
-        return text
-        
-def download_file():
-    
+        return text, gr.DownloadButton(label = "Download File", value = file)
 
 # with gr.Blocks(title="T3") as demo:
 #     with gr.Row():
@@ -23,7 +18,7 @@ def download_file():
 demo = gr.Interface(
     fn = upload_file,
     inputs = ["file"],
-    outputs = ["textbox", gr.DownloadButton(label = "Download File")]
+    outputs = ["textbox", "downloadbutton"]
 )
 
 demo.launch()
