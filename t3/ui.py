@@ -17,7 +17,7 @@ def upload_file(file):
 # 
 demo = gr.Interface(
     fn = upload_file,
-    inputs = ["file"],
+    inputs = ["files"],
     outputs = ["textbox", "downloadbutton"]
 )
 
