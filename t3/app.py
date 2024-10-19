@@ -1,6 +1,9 @@
-from pandas.core.frame import StringIO
+# from pandas.core.frame import StringIO
+from io import StringIO
 import streamlit as st
 from pathlib import Path
+import os
+from supabase import create_client, Client
 
 # def upload_file(file):
 #     filename = Path(file).name
