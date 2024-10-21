@@ -4,6 +4,14 @@ import streamlit as st
 from pathlib import Path
 import os
 from supabase import create_client, Client
+from dotenv import load_dotenv
+
+load_dotenv()
+
+api_key = os.getenv('KEY')
+url = os.getenv('URL')
+
+print(api_key)
 
 # def upload_file(file):
 #     filename = Path(file).name
@@ -27,6 +35,7 @@ if file is not None:
     st.text_area("Output", value = text, disabled=True)
     st.download_button("Download file", data = text, file_name=filename)
     st.feedback()
+    st.write(url)
     # st.write("Reading file line by line")
     # for line in text.splitlines():
     #     st.write(line)
