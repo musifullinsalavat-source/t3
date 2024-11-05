@@ -54,3 +54,33 @@
 # )
 
 # demo.launch(auth = ("username", "password"))
+# 
+# 
+# STREAMLIT
+# # with st.sidebar:
+#     st.session_state.user_email = None
+#     if st.session_state["user_email"]:
+#         st.write(f"Logged in as {st.session_state['user_email']}")
+#     else:
+#         st.write("Not logged in")
+#     signin, signup, sso =  st.tabs(["Sign in", "Sign up", "SSO"])
+#     with signin:
+#         with st.form("Log In"):
+#             user_email = st.text_input("Email")
+#             signin_button = st.form_submit_button("Log In", on_click=login, args=[user_email])
+#             # print(user_email)
+#     with signup:
+#         with st.form("signup"):
+#             email_input = st.text_input("Email")
+#             signup_button = st.form_submit_button("Sign up")
+#     with sso:
+#         with st.form("sso"):
+#             sso_button = st.form_submit_button("SSO")
+# idea: use login with link, that way a user will just get link via email and I won't need to deal with passwords or keys
+# OTP login won't work since I need to set up a custom smtp server
+        
+# file = st.file_uploader("Upload file", type=['txt', 'docx', 'pdf']) #todo: add .doc later when textract is updated to latest version of six (1.16.0)
+# st.button("Upload file", on_click=upload_file, args=[file])
+# st.text_area("Output", value = st.session_state.text, disabled=True)
+# # st.download_button("Download file", data = st.session_state.text, file_name=f"{filename}.txt", mime="text/plain")
+# st.feedback()
