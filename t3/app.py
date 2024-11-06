@@ -15,6 +15,7 @@ import openai
 from openai import OpenAI
 import time
 import re
+import urllib.parse
 
 load_dotenv()
 
@@ -135,46 +136,77 @@ def login_form(
     return client
 
 def signout(client):
-    client.auth.sign_out()
+    # client.auth.sign_out()
     st.session_state["authenticated"] = False
     st.session_state["username"] = None
     st.session_state.text = None
 
+def clean_filename(filename):
+    base, ext = os.path.splitext(filename)
+    cleaned_base = re.sub(r'[^\w\s-]', '', base).strip().replace(' ', '_')
+    return f'{cleaned_base}{ext}'
+    
 def upload_file(file, client):
     
     if file is not None:
         file_type = file.type
-        file_name = file.name
-        
+        file_name = clean_filename(file.name)
         file_contents = file.getvalue()
-        client.upload(bucket_id = "t3files", source = "local", file = file, destination_path = f"lectures/{file_name}")
-        file_db_path = f"{supabase_url}/storage/v1/object/public/t3files/lectures/{file_name}"
-        response = client.table("users").select("username, id").eq("username", st.session_state.username).execute()
-        user_id = response.data[0]["id"]
-        client.table("lectures").insert(dict(file_path = file_db_path, user_id = user_id)).execute()
-    
+        
         if file_type == "text/plain":
             lecture_text = file.read().decode('utf-8')
+            client.upload(bucket_id = "t3files", source = "local", file = file, destination_path = f"lectures/{file_name}", overwrite = True)
+            file_db_path = f"{supabase_url}/storage/v1/object/public/t3files/lectures/{file_name}"
+            response = client.table("users").select("username, id").eq("username", st.session_state.username).execute()
+            user_id = response.data[0]["id"]
+            client.table("lectures").insert(dict(file_path = file_db_path, user_id = user_id)).execute()
     
-        # elif file_type == "application/pdf":
-        #     reader = PdfReader(file)
-        #     text = ""
-        #     for page in reader.pages:
-        #         text += page.extract_text()
-        #     st.session_state.text = text
+        elif file_type == "application/pdf":
+            reader = PdfReader(file)
+            lecture_text = ""
+            for page in reader.pages:
+                lecture_text += page.extract_text()
+            # st.session_state.lecture_text = lecture_text
+            supabase.storage.from_("t3files").upload(
+                path = f"lectures/{file_name}",
+                file = file_contents,
+                
+                file_options = {
+                    "content-type": file_type,
+                    "x-upsert": "true"
+                }
+            )
+            file_db_path = f"{supabase_url}/storage/v1/object/public/t3files/lectures/{file_name}"
+            response = client.table("users").select("username, id").eq("username", st.session_state.username).execute()
+            user_id = response.data[0]["id"]
+            client.table("lectures").insert(dict(file_path = file_db_path, user_id = user_id)).execute()
         
         # elif file_type == "application/msword":
             # st.session_state.text = textract.process(file) # might not work due to dependency incompatibility. waiting for textract to merge dependency update.
         
-        # elif file_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        #     doc = Document(file)
-        #     st.session_state.text = "\n".join([para.text for para in doc.paragraphs])
+        elif file_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            doc = Document(file)
+            lecture_text = "\n".join([para.text for para in doc.paragraphs])
+            supabase.storage.from_("t3files").upload(
+                path = f"lectures/{file_name}",
+                file = file_contents,
+                
+                file_options = {
+                    "content-type": file_type,
+                    "x-upsert": "true"
+                }
+            )
+            file_db_path = f"{supabase_url}/storage/v1/object/public/t3files/lectures/{file_name}"
+            response = client.table("users").select("username, id").eq("username", st.session_state.username).execute()
+            user_id = response.data[0]["id"]
+            client.table("lectures").insert(dict(file_path = file_db_path, user_id = user_id)).execute()
         
         else:
             st.error("Unsupported file type!")
         
     return lecture_text
 
+@st.fragment
 def chunk_text(text, max_tokens = 10000):
     sentences = text.split('. ')
     chunks = []
@@ -190,6 +222,7 @@ def chunk_text(text, max_tokens = 10000):
         chunks.append(chunk)
     return chunks
 
+@st.fragment
 def generate_test(lecture_text, prompt):
     test_questions = []
     messages = [
@@ -209,6 +242,7 @@ def generate_test(lecture_text, prompt):
     
     return test_questions
     
+@st.fragment
 def process_test(text):
     text = text[0]
     start_match = re.search(r"Вот сгенериованных вопросов с верными вариантами ответов\:", text)
@@ -220,9 +254,17 @@ def process_test(text):
     final_text = ''.join(text).replace('\n', '<br>')
         
     return final_text
+    
+def save_test_to_db(questions, test_liked):
+    user = supabase.table("users").select("username, id").eq("username", st.session_state.username).execute()
+    user_id = user.data[0]["id"]
+    lecture = supabase.table("lectures").select("user_id").eq(user_id).execute()
+    lecture_id = lecture.data[0]["id"]
+    supabase.table("tests").insert(dict(user_id = user_id, lecture_id = lecture_id, test_text = questions, test_liked = test_liked))
 
-def download_file(text):
-    pass
+@st.fragment
+def download_test(questions):
+    st.download_button("Download test", data = questions, mime = 'text/plain', type = "primary", use_container_width=True)
 
 def main():
     client = login_form()
@@ -235,19 +277,21 @@ def main():
             st.button(label = "Sign out", on_click=signout, args=[client], type = "primary", use_container_width=True)
         
          # only txt (for now), dealing with other file types is a hassle especially when trying to upload to storage.
-        file = st.file_uploader("Upload file", type=['txt'])
+        file = st.file_uploader("Upload file", type=['txt', 'pdf', 'docx'])
         # st.button("Upload file", on_click=upload_file, args=[file, client])
-        if st.button("Upload file"):
-            lecture_text = upload_file(file, client)
-        # st.text_area("Output", value = st.session_state.text, disabled=True)
+        lecture_text = ""
+        if st.button("Upload file", use_container_width=True):
+            lecture_text += upload_file(file, client)
+            # st.text_area("Output", value = lecture_text, disabled=True)
         chunked_text = chunk_text(lecture_text)
-        generated_test = generate_test(lecture_text, prompt1)
+        generated_test = generate_test(chunked_text, prompt1)
         cleaned_test = process_test(generated_test)
-        print(cleaned_test)
+        # print(cleaned_test)
         st.write(cleaned_test, unsafe_allow_html=True)
-            # st.feedback()
-        # st.download_button("Download file", data = file)
-        st.feedback()
+        # feedback = st.feedback(on_change=save_test_to_db, args=[generated_test, ])
+        # save_test_to_db(generated_test, feedback)
+        download_test(generated_test[0])
+        # st.download_button("Download file", data = generated_test, mime = "text/plain", type = "primary")
         
         
         
