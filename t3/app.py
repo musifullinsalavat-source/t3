@@ -61,7 +61,7 @@ if "lecture_text" not in st.session_state:
 # Before generating new questions , write - 'Here are the corrected questions:'
 # The questions should correspond to this context {}. 5 Generated questions with correct answers, after each question the correct answer is indicated:"""
     
-first_prompt = """Ты школьный учитель, которому необходимо сгенерировать 5 тестов в утвердительной форме с 4 вариантами ответов и одним верным вариантом ответа.
+first_prompt = """Ты школьный учитель, которому необходимо сгенерировать 15 тестов в утвердительной форме с 4 вариантами ответов и одним верным вариантом ответа.
 Тесты должны соответствовать следующим требованиям:
 •	формулировать текст задания в утвердительной форме , в конце предложения стоит знак двоеточия - ":"!
 Формулировка текста каждого задания должна быть в утвердительной форме, БЕЗ знака "вопрос" (?) и БЕЗ вопросительных слов!
@@ -184,7 +184,7 @@ def signout(client):
     # client.auth.sign_out()
     st.session_state["authenticated"] = False
     st.session_state["username"] = None
-    st.session_state.text = None
+    st.session_state.lecture_text = None
 
 def clean_filename(filename):
     base, ext = os.path.splitext(filename)
@@ -321,7 +321,7 @@ def submit_feedback(q_index):
     feedback = st.feedback(key = q_index)
     if feedback is not None:
         feedbacks[f"Q{q_index+1}"] = feedback
-    print(feedbacks)
+    # print(feedbacks)
     return feedbacks
     
 @st.fragment
@@ -334,7 +334,22 @@ def save_test_to_db(questions):
 
 @st.fragment
 def download_test(questions):
-    if st.download_button("Download test", data = str(questions), mime = 'text/plain', type = "primary", use_container_width=True):
+    doc = Document()
+    text = ''
+    for index, question in enumerate(questions):
+        text += question['question']
+        text += '\n'
+        for i, choice in enumerate(question['choices']):
+            text += choice
+            text += '\n'
+        text += f"\nверный ответ: {question['correct_answer']}"
+        text += '\n\n'
+    doc.add_paragraph(text)
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    q_doc = buf.read()
+    if st.download_button("Download test", data = q_doc, mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document", type = "primary", use_container_width=True):
         save_test_to_db(questions) 
         
 
@@ -360,7 +375,6 @@ def main():
             display_questions(parsed_test)
             with st.popover("Отправьте отзыв и скачайте", use_container_width=True):
                 st.write("Оцените вопросы с помощью ':material/thumb_up:', если вам нравится, и ':material/thumb_down:', если вам не нравится")
-                # save_test_to_db(generated_test[0])
                 download_test(parsed_test)
             # download_test(generated_test[0])
         # save_test_to_db(generated_test)
