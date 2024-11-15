@@ -36,32 +36,32 @@ llm = OpenAI(
 if "lecture_text" not in st.session_state:
     st.session_state.lecture_text = ""
     
-prompt0 = """You are a school teacher who needs to generate 5 tests in the affirmative form with 4 possible answers and one correct answer.
-The tests must meet the following requirements:
-• formulate the text of the assignment in an affirmative form, at the end of the sentence there is a colon sign - ":"!
-The wording of the text of each assignment must be in an affirmative form, WITHOUT the "question" sign (?) and WITHOUT question words!
-the very wording of the task should not contain hints on the correct answer!
-• place keywords in the text of the assignment at the beginning of the sentence;
-• You cannot use the answer options "All of the above", "All of the above options", "All of the above", "All except", "All answer options are correct", "Both options", "All answer options are incorrect";
-• all answer options should be equally attractive: similar in both appearance and grammatical structure, the correct answer should not contain a grammatical hint;
-After the answer options, one correct answer option is indicated for each question.
-- exclude lengthy arguments, repetitions, and complex syntactic ones in the text
-turns, double negation, as well as the words "sometimes", "often", "always", "all",
-"never";
-- exclude the words: "specify", "select", "list", "name", "all of
-the listed", "all except";
-- the answers to the task should be meaningful, similar both in
-appearance and grammatical structure, and attractive to choose from;
+# prompt0 = """You are a school teacher who needs to generate 5 tests in the affirmative form with 4 possible answers and one correct answer.
+# The tests must meet the following requirements:
+# • formulate the text of the assignment in an affirmative form, at the end of the sentence there is a colon sign - ":"!
+# The wording of the text of each assignment must be in an affirmative form, WITHOUT the "question" sign (?) and WITHOUT question words!
+# the very wording of the task should not contain hints on the correct answer!
+# • place keywords in the text of the assignment at the beginning of the sentence;
+# • You cannot use the answer options "All of the above", "All of the above options", "All of the above", "All except", "All answer options are correct", "Both options", "All answer options are incorrect";
+# • all answer options should be equally attractive: similar in both appearance and grammatical structure, the correct answer should not contain a grammatical hint;
+# After the answer options, one correct answer option is indicated for each question.
+# - exclude lengthy arguments, repetitions, and complex syntactic ones in the text
+# turns, double negation, as well as the words "sometimes", "often", "always", "all",
+# "never";
+# - exclude the words: "specify", "select", "list", "name", "all of
+# the listed", "all except";
+# - the answers to the task should be meaningful, similar both in
+# appearance and grammatical structure, and attractive to choose from;
 
-- every wrong answer must be plausible, credible and convincing;
-- there should be no hints on the correct answer in the text of the task
+# - every wrong answer must be plausible, credible and convincing;
+# - there should be no hints on the correct answer in the text of the task
 
-Before the correct answer, it should be written - "The correct answer"
-After each correct question there should be two empty lines "\n\n"
-Before generating new questions , write - 'Here are the corrected questions:'
-The questions should correspond to this context {}. 5 Generated questions with correct answers, after each question the correct answer is indicated:"""
+# Before the correct answer, it should be written - "The correct answer"
+# After each correct question there should be two empty lines "\n\n"
+# Before generating new questions , write - 'Here are the corrected questions:'
+# The questions should correspond to this context {}. 5 Generated questions with correct answers, after each question the correct answer is indicated:"""
     
-first_prompt = """Ты школьный учитель, которому необходимо сгенерировать 5 тестов в утвердительной форме с 4 вариантами ответов и одним верным вариантом ответа.
+first_prompt = """Ты школьный учитель, которому необходимо сгенерировать 15 тестов в утвердительной форме с 4 вариантами ответов и одним верным вариантом ответа.
 Тесты должны соответствовать следующим требованиям:
 •	формулировать текст задания в утвердительной форме , в конце предложения стоит знак двоеточия - ":"!
 Формулировка текста каждого задания должна быть в утвердительной форме, БЕЗ знака "вопрос" (?) и БЕЗ вопросительных слов!
@@ -99,10 +99,10 @@ second_prompt = """Даны сгенерированные ранее тобой
 Убедись, что JSON правильно отформатирован. Также не забудь добавить разделитель ',' после каждого варианта в 'choices'.
  """
 
-prompt2 = """You are a professor with expertise in every possible field and should create an exam on the topic of the Input PDF. "
-"Using the attached lecture slides (please analyze thoroughly), create a Master-level multiple-choice exam. The exam should contain multiple-choice and single-choice questions, "
-"appropriately marked so that students know how many options to select. Create 5 realistic exam questions covering the entire content. Provide the output in a JSON format. "
-"The JSON should have the structure: [{'question': '1. ...', 'choices': ['A ...', 'B ...',], 'correct_answer': '...', 'explanation': '...'}, ...]. Ensure the JSON is valid and properly formatted. Also, don't forget to add the ',' delimiter after each last option in the 'choices' so that it can be parsed correctly as JSON."""
+# prompt2 = """You are a professor with expertise in every possible field and should create an exam on the topic of the Input PDF. "
+# "Using the attached lecture slides (please analyze thoroughly), create a Master-level multiple-choice exam. The exam should contain multiple-choice and single-choice questions, "
+# "appropriately marked so that students know how many options to select. Create 5 realistic exam questions covering the entire content. Provide the output in a JSON format. "
+# "The JSON should have the structure: [{'question': '1. ...', 'choices': ['A ...', 'B ...',], 'correct_answer': '...', 'explanation': '...'}, ...]. Ensure the JSON is valid and properly formatted. Also, don't forget to add the ',' delimiter after each last option in the 'choices' so that it can be parsed correctly as JSON."""
     
 # def signup(user_email):
 #     pass
@@ -184,7 +184,7 @@ def signout(client):
     # client.auth.sign_out()
     st.session_state["authenticated"] = False
     st.session_state["username"] = None
-    st.session_state.text = None
+    st.session_state.lecture_text = None
 
 def clean_filename(filename):
     base, ext = os.path.splitext(filename)
@@ -267,9 +267,9 @@ def chunk_text(text, max_tokens = 10000):
         chunks.append(chunk)
     return chunks
 
-def generate_test(prompt):
+def generate_test(prompt, text):
     test_questions = []
-    combined_message = f"{prompt}\n'{st.session_state.lecture_text}'"
+    combined_message = f"{prompt}\n'{text}'"
     # print(combined_message)
     messages = [
         {"role": "user", "content": combined_message}
@@ -321,7 +321,7 @@ def submit_feedback(q_index):
     feedback = st.feedback(key = q_index)
     if feedback is not None:
         feedbacks[f"Q{q_index+1}"] = feedback
-    print(feedbacks)
+    # print(feedbacks)
     return feedbacks
     
 @st.fragment
@@ -334,7 +334,22 @@ def save_test_to_db(questions):
 
 @st.fragment
 def download_test(questions):
-    if st.download_button("Download test", data = str(questions), mime = 'text/plain', type = "primary", use_container_width=True):
+    doc = Document()
+    text = ''
+    for index, question in enumerate(questions):
+        text += question['question']
+        text += '\n'
+        for i, choice in enumerate(question['choices']):
+            text += choice
+            text += '\n'
+        text += f"\nверный ответ: {question['correct_answer']}"
+        text += '\n\n'
+    doc.add_paragraph(text)
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    q_doc = buf.read()
+    if st.download_button("Download test", data = q_doc, mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document", type = "primary", use_container_width=True):
         save_test_to_db(questions) 
         
 
@@ -353,14 +368,13 @@ def main():
 
         if st.button("Generate Tests", use_container_width=True):
             chunked_text = chunk_text(st.session_state.lecture_text)
-            first_gen_text = generate_test(first_prompt)
-            second_gen_text = generate_test(second_prompt)
+            first_gen_text = generate_test(first_prompt, chunked_text)
+            second_gen_text = generate_test(second_prompt, first_gen_text)
             time.sleep(15)
             parsed_test = parse_generated_test(second_gen_text)
             display_questions(parsed_test)
             with st.popover("Отправьте отзыв и скачайте", use_container_width=True):
                 st.write("Оцените вопросы с помощью ':material/thumb_up:', если вам нравится, и ':material/thumb_down:', если вам не нравится")
-                # save_test_to_db(generated_test[0])
                 download_test(parsed_test)
             # download_test(generated_test[0])
         # save_test_to_db(generated_test)
