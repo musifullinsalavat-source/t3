@@ -342,12 +342,7 @@ def save_test_to_db(questions, user_comment):
     supabase.table("tests").insert(dict(user_id = user_id, lecture_id = lecture_id, test_text = questions, test_feedback = feedbacks, comment = user_comment)).execute()
 
 @st.fragment
-<<<<<<< HEAD
 def download_test(questions, user_comment):
-    if st.download_button("Download test", data = str(questions), mime = 'text/plain', type = "primary", use_container_width=True):
-        save_test_to_db(questions, user_comment) 
-=======
-def download_test(questions):
     doc = Document()
     text = ''
     for index, question in enumerate(questions):
@@ -364,8 +359,7 @@ def download_test(questions):
     buf.seek(0)
     q_doc = buf.read()
     if st.download_button("Download test", data = q_doc, mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document", type = "primary", use_container_width=True):
-        save_test_to_db(questions) 
->>>>>>> 1e1c81033bc4d6ce7f9296a9c65d788ad4f62f39
+        save_test_to_db(questions, user_comment) 
         
 
 def main():
@@ -391,12 +385,8 @@ def main():
             with st.popover("Отправьте отзыв и скачайте", use_container_width=True):
                 comment = add_comment()
                 st.write("Оцените вопросы с помощью ':material/thumb_up:', если вам нравится, и ':material/thumb_down:', если вам не нравится")
-<<<<<<< HEAD
                 # save_test_to_db(generated_test[0])
                 download_test(parsed_test, comment)
-=======
-                download_test(parsed_test)
->>>>>>> 1e1c81033bc4d6ce7f9296a9c65d788ad4f62f39
             # download_test(generated_test[0])
         # save_test_to_db(generated_test)
         
