@@ -1,30 +1,30 @@
 from dotenv import load_dotenv
 import os
+import streamlit as st
 import supabase
 from supabase import create_client, Client
+from streamlit_supabase_auth import login_form, logout_button
 
 load_dotenv()
 
-key: str = os.getenv('KEY')
-url: str = os.getenv('URL')
+key: str = os.getenv('SUPABASE_KEY')
+url: str = os.getenv('SUPABASE_URL')
 supabase: Client = create_client(url, key)
 
-# response = (
-#     supabase.table("users")
-#     .insert({"username": "janedoe123", "email": "janedoe231@example.com"})
-#     .execute()
-# )
-
-try:
-    response = supabase.table("users").select("ja").execute()
-except supabase.exceptions.HTTPError as error:
-    print(f"Error: {error.status_code} {error.message}")
-except Exception as e:
-    print(f"Unexpected error: {e}")
-
-print(response)
-
-# if response.raise_when_api_error:
-#     print("Error: ", response.error )
-# else:
-#     print("User added: ", response.data)
+def main():
+    session = login_form(
+        url,
+        key,
+        providers=["apple", "google", "email"],
+    )
+    
+    if not session:
+        return
+        
+    st.query_params(page=["success"])
+    with st.sidebar:
+        st.write(f"Welcome {session['user']['email']}")
+        logout_button()
+        
+if __name__ == "__main__":
+    main()

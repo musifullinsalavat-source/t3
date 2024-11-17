@@ -325,17 +325,26 @@ def submit_feedback(q_index):
     return feedbacks
     
 @st.fragment
-def save_test_to_db(questions):
+def add_comment():
+    with st.form("feedback comment", clear_on_submit=True):
+        comment = st.text_input("Comment")
+        submitted = st.form_submit_button("Submit Feedback")
+        if submitted:
+            return comment
+        return 
+    
+@st.fragment
+def save_test_to_db(questions, user_comment):
     user = supabase.table("users").select("username, id").eq("username", st.session_state.username).execute()
     user_id = user.data[0]["id"]
     lecture = supabase.table("lectures").select("id, user_id").eq("user_id", user_id).execute()
     lecture_id = lecture.data[0]["id"]
-    supabase.table("tests").insert(dict(user_id = user_id, lecture_id = lecture_id, test_text = questions, test_feedback = feedbacks)).execute()
+    supabase.table("tests").insert(dict(user_id = user_id, lecture_id = lecture_id, test_text = questions, test_feedback = feedbacks, comment = user_comment)).execute()
 
 @st.fragment
-def download_test(questions):
+def download_test(questions, user_comment):
     if st.download_button("Download test", data = str(questions), mime = 'text/plain', type = "primary", use_container_width=True):
-        save_test_to_db(questions) 
+        save_test_to_db(questions, user_comment) 
         
 
 def main():
@@ -359,9 +368,10 @@ def main():
             parsed_test = parse_generated_test(second_gen_text)
             display_questions(parsed_test)
             with st.popover("Отправьте отзыв и скачайте", use_container_width=True):
+                comment = add_comment()
                 st.write("Оцените вопросы с помощью ':material/thumb_up:', если вам нравится, и ':material/thumb_down:', если вам не нравится")
                 # save_test_to_db(generated_test[0])
-                download_test(parsed_test)
+                download_test(parsed_test, comment)
             # download_test(generated_test[0])
         # save_test_to_db(generated_test)
         
