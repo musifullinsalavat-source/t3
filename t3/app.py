@@ -328,21 +328,20 @@ def submit_feedback(q_index):
 def add_comment():
     with st.form("feedback comment", clear_on_submit=True):
         comment = st.text_input("Comment")
-        submitted = st.form_submit_button("Submit Feedback")
-        if submitted:
-            return comment
-        return 
-    
+        st.form_submit_button("Submit Feedback")
+        print(comment)
+        return comment
+
 @st.fragment
-def save_test_to_db(questions, user_comment):
+def save_test_to_db(questions,comment):
     user = supabase.table("users").select("username, id").eq("username", st.session_state.username).execute()
     user_id = user.data[0]["id"]
     lecture = supabase.table("lectures").select("id, user_id").eq("user_id", user_id).execute()
     lecture_id = lecture.data[0]["id"]
-    supabase.table("tests").insert(dict(user_id = user_id, lecture_id = lecture_id, test_text = questions, test_feedback = feedbacks, comment = user_comment)).execute()
+    supabase.table("tests").insert(dict(user_id = user_id, lecture_id = lecture_id, test_text = questions, test_feedback = feedbacks, test_comment = comment)).execute()
 
 @st.fragment
-def download_test(questions, user_comment):
+def download_test(questions):
     doc = Document()
     text = ''
     for index, question in enumerate(questions):
@@ -358,8 +357,11 @@ def download_test(questions, user_comment):
     doc.save(buf)
     buf.seek(0)
     q_doc = buf.read()
+    
+    comment = add_comment()
+    
     if st.download_button("Download test", data = q_doc, mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document", type = "primary", use_container_width=True):
-        save_test_to_db(questions, user_comment) 
+        save_test_to_db(questions, comment) 
         
 
 def main():
@@ -383,10 +385,9 @@ def main():
             parsed_test = parse_generated_test(second_gen_text)
             display_questions(parsed_test)
             with st.popover("Отправьте отзыв и скачайте", use_container_width=True):
-                comment = add_comment()
                 st.write("Оцените вопросы с помощью ':material/thumb_up:', если вам нравится, и ':material/thumb_down:', если вам не нравится")
                 # save_test_to_db(generated_test[0])
-                download_test(parsed_test, comment)
+                download_test(parsed_test)
             # download_test(generated_test[0])
         # save_test_to_db(generated_test)
         
