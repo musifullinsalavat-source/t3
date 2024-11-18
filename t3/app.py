@@ -17,7 +17,24 @@ import time
 import re
 import urllib.parse
 import json
+from streamlit_cookie_banner import cookie_banner
 import uuid
+
+import streamlit as st
+from streamlit_cookie_banner import cookie_banner
+
+consent = cookie_banner(
+    banner_text="We use cookies to ensure you get the best experience.",
+    display=True,  # Set to False if you want to hide the banner
+    link_text="Learn more",  # Optional: Link text (e.g., 'Learn more')
+    link_url="https://your-privacy-policy-url.com",  # Optional: URL to your privacy policy
+    key="cookie_banner"  # Optional: A unique key to control re-rendering
+)
+
+if consent:
+    st.write("Thank you for accepting cookies!")
+else:
+    st.write("Please consider accepting cookies to improve your experience")
 
 load_dotenv()
 
@@ -188,7 +205,12 @@ def signout(client):
 
 def clean_filename(filename):
     base, ext = os.path.splitext(filename)
-    cleaned_base = re.sub(r'[^\w\s-]', '', base).strip().replace(' ', '_')
+    base_eng = re.match('^[a-zA-Z0-9._-]+$', base)
+    if not base_eng:
+        toutf8 = base.encode('utf-8')
+        hexenc = toutf8.hex()
+        return f'{hexenc}{ext}'
+    cleaned_base = re.sub(r'[^\w\s-]', '', base_eng).strip().replace(' ', '_')
     return f'{cleaned_base}{ext}'
     
 def upload_file(file, client):
@@ -328,8 +350,7 @@ def submit_feedback(q_index):
 def add_comment():
     with st.form("feedback comment", clear_on_submit=True):
         comment = st.text_input("Comment")
-        st.form_submit_button("Submit Feedback")
-        print(comment)
+        st.form_submit_button("Submit Feedback", use_container_width=True)
         return comment
 
 @st.fragment
