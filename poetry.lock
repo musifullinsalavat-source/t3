@@ -2321,6 +2321,34 @@ watchdog = {version = ">=2.1.5,<6", markers = "platform_system != \"Darwin\""}
 snowflake = ["snowflake-connector-python (>=2.8.0)", "snowflake-snowpark-python[modin] (>=1.17.0)"]
 
 [[package]]
+name = "streamlit-cookie-banner"
+version = "0.1.0"
+description = "A custom Streamlit component to display a basic cookie banner"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "streamlit_cookie_banner-0.1.0-py3-none-any.whl", hash = "sha256:2bc2f33cf57b3fd2cf02f40d89e21898ee011564ef2c0ef7da161f594f6a59d8"},
+    {file = "streamlit_cookie_banner-0.1.0.tar.gz", hash = "sha256:14541b93b66880b0e47324494d6ada478625266641dd436cd0f37f44212c0d75"},
+]
+
+[package.dependencies]
+streamlit = ">=1.0"
+
+[[package]]
+name = "streamlit-supabase-auth"
+version = "1.0.2"
+description = "JWT authentication with Supabase"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "streamlit_supabase_auth-1.0.2-py3-none-any.whl", hash = "sha256:ab90f8355789abf909f53976a714c7925a164cbc4b557aebc7cdb1a9ff7172fa"},
+    {file = "streamlit_supabase_auth-1.0.2.tar.gz", hash = "sha256:a43ac1bfecdd5f7c434d18b7706f75d6f312335f5a2388869ef53cb1f7828a08"},
+]
+
+[package.dependencies]
+streamlit = ">=0.63"
+
+[[package]]
 name = "strenum"
 version = "0.4.15"
 description = "An Enum that inherits from str."
@@ -2697,4 +2725,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "a64df50f684e423bd5ba2ef64e4c0d3e108fc7151411ecc56c72447aee7a2bc1"
+content-hash = "36bca1d995f75f27002d587ddb41b4d00b206b333db2897bea3674a521409334"
