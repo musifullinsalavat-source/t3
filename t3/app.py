@@ -23,18 +23,10 @@ import uuid
 import streamlit as st
 from streamlit_cookie_banner import cookie_banner
 
-consent = cookie_banner(
-    banner_text="We use cookies to ensure you get the best experience.",
-    display=True,  # Set to False if you want to hide the banner
-    link_text="Learn more",  # Optional: Link text (e.g., 'Learn more')
-    link_url="https://your-privacy-policy-url.com",  # Optional: URL to your privacy policy
-    key="cookie_banner"  # Optional: A unique key to control re-rendering
+st.set_page_config(
+    page_title="T3 Ассистент",
+    page_icon="🤖",
 )
-
-if consent:
-    st.write("Thank you for accepting cookies!")
-else:
-    st.write("Please consider accepting cookies to improve your experience")
 
 load_dotenv()
 
@@ -120,9 +112,6 @@ second_prompt = """Даны сгенерированные ранее тобой
 # "Using the attached lecture slides (please analyze thoroughly), create a Master-level multiple-choice exam. The exam should contain multiple-choice and single-choice questions, "
 # "appropriately marked so that students know how many options to select. Create 5 realistic exam questions covering the entire content. Provide the output in a JSON format. "
 # "The JSON should have the structure: [{'question': '1. ...', 'choices': ['A ...', 'B ...',], 'correct_answer': '...', 'explanation': '...'}, ...]. Ensure the JSON is valid and properly formatted. Also, don't forget to add the ',' delimiter after each last option in the 'choices' so that it can be parsed correctly as JSON."""
-    
-# def signup(user_email):
-#     pass
 
 def login_form(
     *,
@@ -332,7 +321,6 @@ def display_questions(questions):
         for i, choice in enumerate(question["choices"]):
             st.write(f"{choice}")
         st.write(f"верный ответ: {question['correct_answer']}")
-        # st.write(f"Explanation: {question['explanation']}")
         
         feedback = submit_feedback(index)
 
@@ -349,8 +337,8 @@ def submit_feedback(q_index):
 @st.fragment
 def add_comment():
     with st.form("feedback comment", clear_on_submit=True):
-        comment = st.text_input("Comment")
-        st.form_submit_button("Submit Feedback", use_container_width=True)
+        comment = st.text_input("Как можно улучшить тест? Расскажите как можно подробнее")
+        st.form_submit_button("Отправить", use_container_width=True)
         return comment
 
 @st.fragment
@@ -381,7 +369,7 @@ def download_test(questions):
     
     comment = add_comment()
     
-    if st.download_button("Download test", data = q_doc, mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document", type = "primary", use_container_width=True):
+    if st.download_button("Скачать тест", data = q_doc, mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document", type = "primary", use_container_width=True):
         save_test_to_db(questions, comment) 
         
 
@@ -389,16 +377,26 @@ def main():
     client = login_form()
     
     if st.session_state["authenticated"]:
-        st.title("T3 Assistant")
+        consent = cookie_banner(
+            banner_text="Мы используем файлы cookie, чтобы обеспечить вам наилучший сервис.",
+            display=True,  # Set to False if you want to hide the banner
+            link_text="Learn more",  # Optional: Link text (e.g., 'Learn more')
+            link_url="https://disk.yandex.ru/i/94HD1oBJCWRGdA",  # Optional: URL to your privacy policy
+            key="cookie_banner"  # Optional: A unique key to control re-rendering
+        )
         
+        if consent:
+            st.context.cookies
+            
         with st.sidebar:
-            st.write(f"Signed in as {st.session_state.username}")
-            st.button(label = "Sign out", on_click=signout, args=[client], type = "primary", use_container_width=True)
+            st.title("T3 Ассистент 🤖")
+            st.write(f"Привет 👋 {st.session_state.username}!")
+            st.button(label = "Выход", on_click=signout, args=[client], type = "primary", use_container_width=True)
         
-        file = st.file_uploader("Upload file", type=['txt', 'pdf', 'docx'])
-        st.button("Upload file", on_click=upload_file, args=[file, client], use_container_width=True)
+        file = st.file_uploader("Выберите или перетащите файл для загрузки", type=['txt', 'pdf', 'docx'])
+        st.button("Загрузить файл", on_click=upload_file, args=[file, client], use_container_width=True)
 
-        if st.button("Generate Tests", use_container_width=True):
+        if st.button("Сгенерировать тест", use_container_width=True):
             chunked_text = chunk_text(st.session_state.lecture_text)
             first_gen_text = generate_test(first_prompt, chunked_text)
             second_gen_text = generate_test(second_prompt, first_gen_text)
@@ -407,10 +405,7 @@ def main():
             display_questions(parsed_test)
             with st.popover("Отправьте отзыв и скачайте", use_container_width=True):
                 st.write("Оцените вопросы с помощью ':material/thumb_up:', если вам нравится, и ':material/thumb_down:', если вам не нравится")
-                # save_test_to_db(generated_test[0])
                 download_test(parsed_test)
-            # download_test(generated_test[0])
-        # save_test_to_db(generated_test)
         
         
         
