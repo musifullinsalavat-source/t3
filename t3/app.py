@@ -1,5 +1,5 @@
 # from pandas.core.frame import StringIO
-from io import StringIO, BytesIO
+from io import BytesIO
 import streamlit as st
 from pathlib import Path
 import os
@@ -19,7 +19,6 @@ import urllib.parse
 import json
 from streamlit_cookie_banner import cookie_banner
 import uuid
-
 import streamlit as st
 from streamlit_cookie_banner import cookie_banner
 
@@ -93,7 +92,7 @@ first_prompt = """Ты школьный учитель, которому нео�
 Перед верным вариантом ответа должно быть написано - "Верный ответ"
 После каждого верного вопроса должно быть две пустые строки "\n\n"
 Перед генерацией новых вопросов , напиши - 'Вот сгенериованных вопросов с верными вариантами ответов, после каждого вопроса указан верный ответ:'
-Вопросы должны соответствовать этому контексту {}. 5 Сгенериованных вопросов с верными вариантами ответов, после каждого вопроса указан верный ответ:"""
+Вопросы должны соответствовать этому контексту {}. Сгенериованных вопросов с верными вариантами ответов, после каждого вопроса указан верный ответ:"""
 
 second_prompt = """Даны сгенерированные ранее тобой вопросы {}, те вопросы в которых последний вариант ответа говорит о верности всех вышеупомянутых по типу 'все вышеперечисленное' необходимо изменить, поскольку такой вариант ответа не приемлем. Должен быть только один верный вариант ответа. Таким образом, необходимо верные вопросы оставить без изменения, а те, которые не соответствуют требованиям заменить верными формулировками вариантов ответов. Перед генерацией новых вопросов , напиши - 'Вот исправленные вопросы:' 
 Тесты должны соответствовать следующим требованиям:
@@ -171,7 +170,7 @@ def login_form(
                     
                     if st.form_submit_button(label = "Log In", type = "primary"):
                         response = client.table(user_tablename).select(f"{username_col}, {password_col}").eq(username_col, username).execute()
-                    
+
                         if len(response.data) > 0:
                             db_password = response.data[0]["password"]
                             if password_hasher.verify(db_password, password):
@@ -183,8 +182,8 @@ def login_form(
                                 st.error("Incorrect Password")
                         else:
                             st.error("Username or Password incorrect")
-                    
     return client
+
 
 def signout(client):
     # client.auth.sign_out()
@@ -263,12 +262,12 @@ def upload_file(file, client):
     return st.session_state.lecture_text
 
 @st.fragment
-def chunk_text(text, max_tokens = 10000):
+def chunk_text(text, max_tokens = 4000):
     sentences = text.split('. ')
     chunks = []
-    chunk = ""
+    chunk = sentences[0] + '. '
     
-    for sentence in sentences:
+    for sentence in sentences[1:]:
         if len(chunk) + len(sentence) > max_tokens:
             chunks.append(chunk)
             chunk = sentence + ". "
@@ -278,24 +277,33 @@ def chunk_text(text, max_tokens = 10000):
         chunks.append(chunk)
     return chunks
 
+
 def generate_test(prompt, text):
     test_questions = []
-    combined_message = f"{prompt}\n'{text}'"
-    # print(combined_message)
-    messages = [
-        {"role": "user", "content": combined_message}
-    ]
-    responses = llm.chat.completions.create(
-        model = model,
-        messages = messages,
-        stream = True,
-        temperature = 0.5
-    )
-    test = ""
-    for response in responses:
-        test += response.choices[0].delta.content or ""
-        
-    test_questions.append(test)
+    
+    for i in range(len(text)):
+    
+        combined_message = f"{prompt}\n'{text[i]}'"
+        # print(combined_message)
+        messages = [
+            {
+                "role": "user",
+                "content": combined_message
+            }
+        ]
+        responses = llm.chat.completions.create(
+            model = model,
+            messages = messages,
+            stream = True,
+            temperature = 0.5
+        )
+        test = ""
+        for response in responses:
+            test += response.choices[0].delta.content or ""
+            
+        # print(test)
+        test_questions.append(test)
+    print(test_questions)
     
     return test_questions
     
@@ -378,7 +386,7 @@ def main():
     
     if st.session_state["authenticated"]:
         consent = cookie_banner(
-            banner_text="Мы используем файлы cookie, чтобы обеспечить вам наилучший сервис.",
+            banner_text="Мы используем файлы cookie, чтобы обеспечить вам наилучший сервис.\n",
             display=True,  # Set to False if you want to hide the banner
             link_text="Learn more",  # Optional: Link text (e.g., 'Learn more')
             link_url="https://disk.yandex.ru/i/94HD1oBJCWRGdA",  # Optional: URL to your privacy policy
@@ -399,8 +407,8 @@ def main():
         if st.button("Сгенерировать тест", use_container_width=True):
             chunked_text = chunk_text(st.session_state.lecture_text)
             first_gen_text = generate_test(first_prompt, chunked_text)
-            second_gen_text = generate_test(second_prompt, first_gen_text)
             time.sleep(15)
+            second_gen_text = generate_test(second_prompt, first_gen_text)
             parsed_test = parse_generated_test(second_gen_text)
             display_questions(parsed_test)
             with st.popover("Отправьте отзыв и скачайте", use_container_width=True):
