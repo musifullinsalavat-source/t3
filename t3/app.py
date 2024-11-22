@@ -410,9 +410,10 @@ def main():
             st.button(label = "Выход", on_click=signout, args=[client], type = "primary", use_container_width=True)
         
         file = st.file_uploader("Выберите или перетащите файл для загрузки", type=['txt', 'pdf', 'docx'])
-        st.button("Загрузить файл", on_click=upload_file, args=[file, client], use_container_width=True)
+        # st.button("Загрузить файл", on_click=upload_file, args=[file, client], use_container_width=True)
 
         if st.button("Сгенерировать тест", use_container_width=True):
+            upload_file(file, client)
             chunked_text = chunk_text(st.session_state.lecture_text)
             # for i, chunk in enumerate(chunked_text):
             #     print(f"Chunk {i+1}: \n {chunk}\n")
