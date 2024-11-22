@@ -1,7 +1,6 @@
 # from pandas.core.frame import StringIO
 from io import BytesIO
 import streamlit as st
-from pathlib import Path
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -11,15 +10,10 @@ from pypdf import PdfReader
 from docx import Document
 from st_supabase_connection import SupabaseConnection
 import argon2
-import openai
 from openai import OpenAI
 import time
 import re
-import urllib.parse
 import json
-from streamlit_cookie_banner import cookie_banner
-import uuid
-import streamlit as st
 from streamlit_cookie_banner import cookie_banner
 
 st.set_page_config(
@@ -409,7 +403,9 @@ def main():
             st.write(f"Привет 👋 {st.session_state.username}!")
             st.button(label = "Выход", on_click=signout, args=[client], type = "primary", use_container_width=True)
         
-        file = st.file_uploader("Выберите или перетащите файл для загрузки", type=['txt', 'pdf', 'docx'], on_change=upload_file, args=[file, client])
+        file = st.file_uploader("Выберите или перетащите файл для загрузки", type=['txt', 'pdf', 'docx'])
+        if file is not None:
+            upload_file(file, client)
         # st.button("Загрузить файл", on_click=upload_file, args=[file, client], use_container_width=True)
 
         if st.button("Сгенерировать тест", use_container_width=True):
