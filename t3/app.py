@@ -69,7 +69,7 @@ if "lecture_text" not in st.session_state:
 # Before generating new questions , write - 'Here are the corrected questions:'
 # The questions should correspond to this context {}. 5 Generated questions with correct answers, after each question the correct answer is indicated:"""
     
-first_prompt = """Ты школьный учитель, которому необходимо сгенерировать 15 тестов в утвердительной форме с 4 вариантами ответов и одним верным вариантом ответа.
+first_prompt = """Ты школьный учитель, которому необходимо сгенерировать 5 тестов в утвердительной форме с 4 вариантами ответов и одним верным вариантом ответа.
 Тесты должны соответствовать следующим требованиям:
 •	формулировать текст задания в утвердительной форме , в конце предложения стоит знак двоеточия - ":"!
 Формулировка текста каждого задания должна быть в утвердительной форме, БЕЗ знака "вопрос" (?) и БЕЗ вопросительных слов!
@@ -94,7 +94,7 @@ first_prompt = """Ты школьный учитель, которому нео�
 Перед генерацией новых вопросов , напиши - 'Вот сгенериованных вопросов с верными вариантами ответов, после каждого вопроса указан верный ответ:'
 Вопросы должны соответствовать этому контексту {}. Сгенериованных вопросов с верными вариантами ответов, после каждого вопроса указан верный ответ:"""
 
-second_prompt = """Даны сгенерированные ранее тобой вопросы {}, те вопросы в которых последний вариант ответа говорит о верности всех вышеупомянутых по типу 'все вышеперечисленное' необходимо изменить, поскольку такой вариант ответа не приемлем. Должен быть только один верный вариант ответа. Таким образом, необходимо верные вопросы оставить без изменения, а те, которые не соответствуют требованиям заменить верными формулировками вариантов ответов. Перед генерацией новых вопросов , напиши - 'Вот исправленные вопросы:' 
+second_prompt = """Даны сгенерированные ранее тобой вопросы {}, те вопросы в которых последний вариант ответа говорит о верности всех вышеупомянутых по типу 'все вышеперечисленное' необходимо изменить, поскольку такой вариант ответа не приемлем. Должен быть только один верный вариант ответа. Таким образом, необходимо верные вопросы оставить без изменения, а те, которые не соответствуют требованиям заменить верными формулировками вариантов ответов. 
 Тесты должны соответствовать следующим требованиям:
 •  формулировать текст задания в утвердительной форме , в конце предложения стоит знак двоеточия - ":"!
 Формулировка текста каждого задания должна быть в утвердительной форме, БЕЗ знака "вопрос" (?) и БЕЗ вопросительных слов!
@@ -105,6 +105,7 @@ second_prompt = """Даны сгенерированные ранее тобой
 после вариантов ответов для каждого вопроса указан один верный вариант ответа.
 Предоставь сгенерированные вопросы в формате JSON. JSON должен иметь следующую структуру: [{{'question': '1. ...', 'choices': ['A ...', 'B ...' ,], 'correct_answer': '...'}}, ...]. Здесь 'question' - формулировка самого задания, 'choices' - это варианты ответов, 'correct_answer' - это верный вариант ответа, который также содержится в 'choices'.
 Убедись, что JSON правильно отформатирован. Также не забудь добавить разделитель ',' после каждого варианта в 'choices'.
+Не добавляйте никаких комментариев до или после создания тестов, просто создайте тесты.
  """
 
 # prompt2 = """You are a professor with expertise in every possible field and should create an exam on the topic of the Input PDF. "
@@ -198,7 +199,7 @@ def clean_filename(filename):
         toutf8 = base.encode('utf-8')
         hexenc = toutf8.hex()
         return f'{hexenc}{ext}'
-    cleaned_base = re.sub(r'[^\w\s-]', '', base_eng).strip().replace(' ', '_')
+    cleaned_base = re.sub(r'[^\w\s-]', '', base).strip().replace(' ', '_')
     return f'{cleaned_base}{ext}'
     
 def upload_file(file, client):
@@ -262,13 +263,13 @@ def upload_file(file, client):
     return st.session_state.lecture_text
 
 @st.fragment
-def chunk_text(text, max_tokens = 4000):
+def chunk_text(text, max_tokens = 15000):
     sentences = text.split('. ')
     chunks = []
     chunk = sentences[0] + '. '
     
     for sentence in sentences[1:]:
-        if len(chunk) + len(sentence) > max_tokens:
+        if len(chunk) + len(sentence) + 2 > max_tokens:
             chunks.append(chunk)
             chunk = sentence + ". "
         else:
@@ -280,11 +281,12 @@ def chunk_text(text, max_tokens = 4000):
 
 def generate_test(prompt, text):
     test_questions = []
-    
+    # chunked_text = chunk_text(text)
     for i in range(len(text)):
     
-        combined_message = f"{prompt}\n'{text[i]}'"
-        # print(combined_message)
+        combined_message = prompt.format(text[i])
+        # print(combined_message ,'\n')
+        # print('-' * 50)
         messages = [
             {
                 "role": "user",
@@ -303,28 +305,34 @@ def generate_test(prompt, text):
             
         # print(test)
         test_questions.append(test)
-    print(test_questions)
+    # print(test_questions)
     
     return test_questions
-    
+  
 def parse_generated_test(test):
-    test = test[0]
-    try:
-        json_start = test.find('[')
-        json_end = test.rfind(']') + 1
-        json_str = test[json_start:json_end]
-        
-        questions = json.loads(json_str)
-        return questions
-    except json.JSONDecodeError as e:
-        st.error(f"JSON parsing error: {e}")
-        st.error("Response from OpenAI:")
-        st.text(test)
-        return None
+    full_test = []
+    # print(f'test: {test} \n\n')
+    for i in range(len(test)):
+        try:
+            json_start = test[i].find('[')
+            json_end = test[i].rfind(']') + 1
+            json_str = test[i][json_start:json_end]
+            # print(f'\n\njson string: {json_str}\n\n')
+            questions = json.loads(json_str)
+            full_test.extend(questions)
+        except json.JSONDecodeError as e:
+            st.error(f"JSON parsing error: {e}")
+            st.error("Response from OpenAI:")
+            st.text(test)
+            return None
+    # print(f'full_test: {full_test}\n\n')
+    return full_test
+    # print(questions)
         
 def display_questions(questions):
     for index, question in enumerate(questions):
-        st.write(f"{question["question"]}")
+        test_question = question["question"][2:]
+        st.write(f"{index+1}: {test_question}")
         st.write("выбор:")
         for i, choice in enumerate(question["choices"]):
             st.write(f"{choice}")
@@ -350,7 +358,7 @@ def add_comment():
         return comment
 
 @st.fragment
-def save_test_to_db(questions,comment):
+def save_test_to_db(questions, comment):
     user = supabase.table("users").select("username, id").eq("username", st.session_state.username).execute()
     user_id = user.data[0]["id"]
     lecture = supabase.table("lectures").select("id, user_id").eq("user_id", user_id).execute()
@@ -362,7 +370,7 @@ def download_test(questions):
     doc = Document()
     text = ''
     for index, question in enumerate(questions):
-        text += question['question']
+        text += f'{index+1}: {question['question'][2:]}'
         text += '\n'
         for i, choice in enumerate(question['choices']):
             text += choice
@@ -406,9 +414,12 @@ def main():
 
         if st.button("Сгенерировать тест", use_container_width=True):
             chunked_text = chunk_text(st.session_state.lecture_text)
+            # for i, chunk in enumerate(chunked_text):
+            #     print(f"Chunk {i+1}: \n {chunk}\n")
             first_gen_text = generate_test(first_prompt, chunked_text)
             time.sleep(15)
             second_gen_text = generate_test(second_prompt, first_gen_text)
+            # st.write(second_gen_text)
             parsed_test = parse_generated_test(second_gen_text)
             display_questions(parsed_test)
             with st.popover("Отправьте отзыв и скачайте", use_container_width=True):
