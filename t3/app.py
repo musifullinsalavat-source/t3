@@ -17,8 +17,8 @@ import json
 from streamlit_cookie_banner import cookie_banner
 
 st.set_page_config(
-    page_title="T3 Ассистент",
-    page_icon="🤖",
+    page_title="Ассистент преподавателя",
+    page_icon="🧑‍🏫",
 )
 
 load_dotenv()
@@ -399,7 +399,7 @@ def main():
             st.context.cookies
             
         with st.sidebar:
-            st.title("T3 Ассистент 🤖")
+            st.title("Ассистент преподавателя")
             st.write(f"Привет 👋 {st.session_state.username}!")
             st.button(label = "Выход", on_click=signout, args=[client], type = "primary", use_container_width=True)
         
