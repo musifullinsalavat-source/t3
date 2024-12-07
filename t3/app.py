@@ -17,7 +17,7 @@ import json
 from streamlit_cookie_banner import cookie_banner
 
 st.set_page_config(
-    page_title="Ассистент преподавателя",
+    page_title="TestMaker",
     page_icon="🧑‍🏫",
 )
 
@@ -399,7 +399,7 @@ def main():
             st.context.cookies
             
         with st.sidebar:
-            st.title("Ассистент преподавателя")
+            st.title("TestMaker")
             st.write(f"Привет 👋 {st.session_state.username}!")
             st.button(label = "Выход", on_click=signout, args=[client], type = "primary", use_container_width=True)
         
