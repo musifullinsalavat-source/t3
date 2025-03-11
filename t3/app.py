@@ -26,9 +26,8 @@ load_dotenv()
 api_key: str = os.getenv('SUPABASE_KEY')
 supabase_url: str = os.getenv('SUPABASE_URL')
 supabase: Client = create_client(supabase_url, api_key)
-# API-KEY from https://cloud.sambanova.ai/apis
-llm_key = os.getenv('OPENAI_API_KEY')
-llm_base_url = os.getenv('OPENAI_BASE_URL')
+llm_key = os.getenv("OPENROUTER_API_KEY")
+llm_base_url: str = os.getenv("OPENROUTER_BASE_URL")
 model = "meta-llama/llama-3.3-70b-instruct:free"
 llm = OpenAI(
     base_url=llm_base_url,
