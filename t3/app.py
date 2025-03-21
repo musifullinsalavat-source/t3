@@ -18,7 +18,7 @@ from streamlit_cookie_banner import cookie_banner
 
 st.set_page_config(
     page_title="TestMaker",
-    page_icon="🧑‍🏫",
+    page_icon=":material/quiz:",
 )
 
 load_dotenv()
@@ -346,7 +346,7 @@ def parse_generated_test(test):
         
 def display_questions(questions):
     for index, question in enumerate(questions):
-        test_question = question["question"][2:]
+        test_question = question["question"]
         st.write(f"{index+1}: {test_question}")
         st.write("выбор:")
         for i, choice in enumerate(question["choices"]):
