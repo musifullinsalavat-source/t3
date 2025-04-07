@@ -386,7 +386,7 @@ def download_test(questions):
     doc = Document()
     text = ''
     for index, question in enumerate(questions):
-        text += f'{index+1}: {question['question'][2:]}'
+        text += f'{index+1}: {question['question']}'
         text += '\n'
         for i, choice in enumerate(question['choices']):
             text += choice
