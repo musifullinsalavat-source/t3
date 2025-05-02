@@ -4,7 +4,7 @@ import streamlit as st
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
-import supabase
+# import supabase as sp
 from pypdf import PdfReader
 # import textract # textract 1.6.5 requires six~=1.12.0, but you have six 1.16.0 which is incompatible.
 from docx import Document
@@ -33,6 +33,14 @@ llm = OpenAI(
     base_url=llm_base_url,
     api_key=llm_key
 )
+
+model_options = [
+    ("google/gemini-2.0-flash-exp:free", "Gemini 2.0 Flash"),
+    # ("openrouter/optimus-alpha", "Optimus Alpha"),
+    ("meta-llama/llama-4-maverick:free", "Llama 4 Maverick"),
+    ("deepseek/deepseek-chat-v3-0324:free", "Deepseek V3"),
+    ("deepseek/deepseek-r1:free", "Deepseek R1")
+]
 
 if "lecture_text" not in st.session_state:
     st.session_state.lecture_text = ""
@@ -118,8 +126,7 @@ second_prompt = """Даны сгенерированные ранее тобой
 •  Нельзя использовать варианты ответов "Все вышеперечисленные","Все вышеперечисленные варианты", «Все перечисленное», «Все, кроме», «Все варианты ответов верны», "Оба варианта", «Все варианты ответов неверны»;
 •  все варианты ответов должны быть одинаково привлекательными: похожими как по внешнему виду, так и по грамматической структуре, правильный вариант ответа не должен содержать грамматической подсказки;
 после вариантов ответов для каждого вопроса указан один верный вариант ответа.
-Предоставь сгенерированные вопросы в формате JSON. JSON должен иметь следующую структуру: [{{'question': '1. ...', 'choices': ['A ...', 'B ...' ,], 'correct_answer': '...'}}, ...]. Здесь 'question' - формулировка самого задания, 'choices' - это варианты ответов, 'correct_answer' - это верный вариант ответа, который также содержится в 'choices'.
-Убедись, что JSON правильно отформатирован. Также не забудь добавить разделитель ',' после каждого варианта в 'choices'.
+Предоставь сгенерированные вопросы в формате JSON. JSON должен иметь следующую структуру: [{{"question": "1. ...", "choices": ["A ...", "B ..." ,], "correct_answer": "..."}}, ...]. Здесь "question" - формулировка самого задания, "choices" - это варианты ответов, "correct_answer" - это верный вариант ответа, который также содержится в "choices". Убедись, что вопросы пронумерованы. Убедись, что JSON правильно отформатирован. Также не забудь добавить разделитель "," после каждого варианта в "choices".
 Не добавляйте никаких комментариев до или после создания тестов, просто создайте тесты.
  """
 
@@ -278,7 +285,7 @@ def upload_file(file, client):
     return st.session_state.lecture_text
 
 @st.fragment
-def chunk_text(text, max_tokens = 15000):
+def chunk_text(text, max_tokens = 32000):
     sentences = text.split('. ')
     chunks = []
     chunk = sentences[0] + '. '
@@ -294,7 +301,7 @@ def chunk_text(text, max_tokens = 15000):
     return chunks
 
 
-def generate_test(prompt, text):
+def generate_test(prompt, text, model):
     test_questions = []
     # chunked_text = chunk_text(text)
     for i in range(len(text)):
@@ -347,12 +354,13 @@ def parse_generated_test(test):
 def display_questions(questions):
     # print(questions)
     for index, question in enumerate(questions):
-        test_question = question["question"]
-        st.write(f"{index+1}: {test_question}")
+        test_question = question['question']
+        st.write(f"{test_question}")
+        # st.write(f"{index+1}: {test_question}")
         st.write("выбор:")
-        for i, choice in enumerate(question["choices"]):
+        for i, choice in enumerate(question['choices']):
             st.write(f"{choice}")
-        st.write(f"верный ответ: {question['correct_answer']}")
+        st.write(f"верный ответ: {question["correct_answer"]}")
         
         feedback = submit_feedback(index)
 
@@ -386,7 +394,8 @@ def download_test(questions):
     doc = Document()
     text = ''
     for index, question in enumerate(questions):
-        text += f'{index+1}: {question['question']}'
+        # text += f'{index+1}: {question['question']}'
+        text += f'{question['question']}'
         text += '\n'
         for i, choice in enumerate(question['choices']):
             text += choice
@@ -438,28 +447,54 @@ def main():
             6. В поле для ввода введите комментарий с обратной связью. 
             7. Нажмите кнопку "Отправить" для загрузки тестов в систему. 
             8. Для скачивания тестов нажми кнопку – Скачать тест""")
+            
+        test_tab, prompt_tab = st.tabs(["📝Test Generation", "⚙️Prompt Management"])
+        with test_tab:
+            file = st.file_uploader("Выберите или перетащите файл для загрузки", type=['txt', 'pdf', 'docx'])
+            if file is not None:
+                upload_file(file, client)
+            # st.button("Загрузить файл", on_click=upload_file, args=[file, client], use_container_width=True)
+            selected_model = st.selectbox(
+                "Выберите модель:",
+                options = model_options,
+                format_func = lambda x: x[1]
+            )
+            
+            # st.write(f"You selected: {selected_model[0]} - {selected_model[1]}")
+    
+            if st.button("Сгенерировать тест", use_container_width=True):
+                if file is None:
+                    st.error("⚠️Для создания тестов необходимо загрузить файл лекции⚠️")
+                    st.stop()
+                    
+                chunked_text = chunk_text(st.session_state.lecture_text)
+                # for i, chunk in enumerate(chunked_text):
+                #     print(f"Chunk {i+1}: \n {chunk}\n")
+                # st.write(f"you wrote {len(st.session_state.prompt_one)} characters")
+                first_gen_text = generate_test(st.session_state.prompt_one, chunked_text, selected_model[0])
+                time.sleep(15)
+                second_gen_text = generate_test(second_prompt, first_gen_text, selected_model[0])
+                # st.write(second_gen_text)
+                parsed_test = parse_generated_test(second_gen_text)
+                display_questions(parsed_test)
+                with st.popover("Отправьте отзыв и скачайте", use_container_width=True):
+                    st.write("Оцените вопросы с помощью ':material/thumb_up:', если вам нравится, и ':material/thumb_down:', если вам не нравится")
+                    download_test(parsed_test)
         
-        file = st.file_uploader("Выберите или перетащите файл для загрузки", type=['txt', 'pdf', 'docx'])
-        if file is not None:
-            upload_file(file, client)
-        # st.button("Загрузить файл", on_click=upload_file, args=[file, client], use_container_width=True)
-
-        if st.button("Сгенерировать тест", use_container_width=True):
-            # upload_file(file, client)
-            chunked_text = chunk_text(st.session_state.lecture_text)
-            # for i, chunk in enumerate(chunked_text):
-            #     print(f"Chunk {i+1}: \n {chunk}\n")
-            first_gen_text = generate_test(first_prompt, chunked_text)
-            time.sleep(15)
-            second_gen_text = generate_test(second_prompt, first_gen_text)
-            # st.write(second_gen_text)
-            parsed_test = parse_generated_test(second_gen_text)
-            display_questions(parsed_test)
-            with st.popover("Отправьте отзыв и скачайте", use_container_width=True):
-                st.write("Оцените вопросы с помощью ':material/thumb_up:', если вам нравится, и ':material/thumb_down:', если вам не нравится")
-                download_test(parsed_test)
-        
-        
+        with prompt_tab:
+            # st.write(f"you wrote {len(st.session_state.prompt_one)} characters")
+            if "prompt_one" not in st.session_state:
+                st.session_state.prompt_one = first_prompt
+            prompt_one = st.text_area(label = "prompt", value = st.session_state.prompt_one, height = 1000)
+            st.session_state.prompt_one = prompt_one
+            save_prompt_btn, reset_prompt_btn = st.columns(2, gap = "large")
+            with save_prompt_btn:
+                if st.button("Save prompt", use_container_width=True):
+                    st.session_state.prompt_one = prompt_one
+                    st.success("Prompt saved successfully")
+                    # with reset_prompt_btn:
+                    #     if st.button("Reset prompt", use_container_width = True):
+                    #         st.session_state.prompt_one = prompt_one
         
 if __name__ == "__main__":
     main()
