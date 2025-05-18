@@ -89,15 +89,15 @@ first_prompt = """Ты школьный учитель, которому нео�
 внешнему виду, так и по грамматической структуре, привлекательными для выбора;
 
 - каждый неправильный вариант ответа должен быть правдоподобным, внушающим доверие и убедительным;
-- в тексте задания не должно быть подсказок на верный вариант ответа
+- в тексте задания не должно быть подсказок на верный вариант ответа \n\n """
 
-Перед верным вариантом ответа должно быть написано - "Верный ответ"
-После каждого верного вопроса должно быть две пустые строки "\n\n"
+first_prompt_end = """Перед верным вариантом ответа должно быть написано - "Верный ответ"
+После каждого верного вопроса должно быть две пустые строки \n\n
 Перед генерацией новых вопросов , напиши - 'Вот исправленные вопросы:'
 Вопросы должны соответствовать этому контексту {}. 
 
 Пример теста 1:
-4. Основной принцип цифровой этики включает в себя:
+Основной принцип цифровой этики включает в себя:
 А) Применение активного слушания
 Б) Помнить про безопасность
 В) Уважение частной жизни
@@ -413,7 +413,9 @@ def download_test(questions):
     if st.download_button("Скачать тест", data = q_doc, mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document", type = "primary", use_container_width=True):
         save_test_to_db(questions, comment) 
         
-
+def reset_prompt():
+    st.session_state.prompt_area_key = first_prompt
+    
 def main():
     client = login_form()
     
@@ -482,19 +484,36 @@ def main():
                     download_test(parsed_test)
         
         with prompt_tab:
-            # st.write(f"you wrote {len(st.session_state.prompt_one)} characters")
-            if "prompt_one" not in st.session_state:
-                st.session_state.prompt_one = first_prompt
-            prompt_one = st.text_area(label = "prompt", value = st.session_state.prompt_one, height = 1000)
-            st.session_state.prompt_one = prompt_one
+            # prompts = [
+            #     (first_prompt, "First Prompt"),
+            #     (second_prompt, "Second Prompt")
+            # ]
+            # # st.write(f"you wrote {len(st.session_state.prompt_one)} characters")
+            # selected_prompt = st.selectbox(
+            #     "Select Prompt",
+            #     options = prompts,
+            #     format_func = lambda x: x[1])
+            
+            # if "prompt_one" not in st.session_state:
+            #     st.session_state.prompt_one = first_prompt
+            
+            prompt_one = st.text_area(label = "prompt", value = first_prompt, key = "prompt_area_key", height = 500)
+            
+            st.session_state.prompt_one = prompt_one + first_prompt_end
+            
             save_prompt_btn, reset_prompt_btn = st.columns(2, gap = "large")
+            
             with save_prompt_btn:
                 if st.button("Save prompt", use_container_width=True):
-                    st.session_state.prompt_one = prompt_one
+                    st.session_state.prompt_one = prompt_one + first_prompt_end
                     st.success("Prompt saved successfully")
-                    # with reset_prompt_btn:
-                    #     if st.button("Reset prompt", use_container_width = True):
-                    #         st.session_state.prompt_one = prompt_one
+            
+            with reset_prompt_btn:
+                if st.button("Reset prompt", use_container_width = True, on_click=reset_prompt):
+                    pass
+            
+            # st.write("Current saved prompt:")
+            # st.write(st.session_state.prompt_one)
         
 if __name__ == "__main__":
     main()
